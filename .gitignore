@@ -1,0 +1,21 @@
+# Binaries
+google-photos-exif-fixer
+*.exe
+
+# Go
+vendor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Output / Takeout directories
+Takeout/
+*_merged/
+*.log
