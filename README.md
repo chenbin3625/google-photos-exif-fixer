@@ -2,6 +2,10 @@
 
 > 把 Google Photos Takeout 导出的照片元数据（拍摄时间、GPS）写回 EXIF，并按年月整理目录。
 
+**English Summary**
+
+Restore Google Photos Takeout metadata back into your photo library. The tool matches media files with JSON sidecars, writes date-taken and GPS data back to JPEG EXIF when possible, preserves timestamps for other media types, and organizes the output by `YYYY/MM`.
+
 ## 背景
 
 通过 [Google Takeout](https://takeout.google.com/) 导出 Google 相册后，你会得到：
