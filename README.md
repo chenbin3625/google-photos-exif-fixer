@@ -1,5 +1,7 @@
 # google-photos-exif-fixer
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Release](https://img.shields.io/github/v/release/chenbin3625/google-photos-exif-fixer)](https://github.com/chenbin3625/google-photos-exif-fixer/releases)
+
 > Write the photo metadata (capture time, GPS) exported from Google Photos Takeout back into EXIF, and organize directories by year and month.
 
 ## Background
@@ -274,6 +276,6 @@ output/
 
 > EXIF 写入仅对 JPEG 生效。其他格式只设置文件 mtime。
 
-## License
+## 许可证
 
 MIT
