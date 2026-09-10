@@ -1,10 +1,147 @@
 # google-photos-exif-fixer
 
+> Write the photo metadata (capture time, GPS) exported from Google Photos Takeout back into EXIF, and organize directories by year and month.
+
+## Background
+
+After exporting Google Photos through [Google Takeout](https://takeout.google.com/), you get:
+
+- Photo/video files, but the **EXIF metadata may be missing** (capture time, GPS coordinates, etc.)
+- File names may be **truncated** (Google's 46-character limit)
+- Each file comes with a `.json` sidecar that holds the complete metadata
+
+These JSON files are the real source of the metadata, but most photo management software will not read them.
+
+**google-photos-exif-fixer** solves this problem: it automatically writes the metadata from the JSON sidecars back into the photos' EXIF, and outputs a clean photo library organized by `YYYY/MM`.
+
+## Features
+
+- **JSON-photo pairing**: exact matching + prefix matching (to cope with Google's truncated file names) + automatic Live Photo association
+- **EXIF writing**: hand-written binary EXIF APP1 segment, writing the capture time (`DateTimeOriginal`) and GPS coordinates
+- **Time fallback chain**: JSON `photoTakenTime` → EXIF `DateTimeOriginal` → folder year inference → file mtime
+- **Directory organization**: output split into `YYYY/MM/` directories, automatically handling file name conflicts
+- **Concurrent processing**: configurable number of workers, fast processing of large numbers of photos
+- **Dry-run mode**: trial run by default, execute for real once you have confirmed everything is correct
+- **Detailed logging**: the processing result of every file is recorded in the log
+
+## Installation
+
+### Download from GitHub Releases
+
+Go to the [Releases](https://github.com/chenbin3625/google-photos-exif-fixer/releases) page to download the binary for your platform.
+
+### Build from source
+
+```bash
+go install github.com/chenbin3625/google-photos-exif-fixer@latest
+```
+
+Or clone and build locally:
+
+```bash
+git clone https://github.com/chenbin3625/google-photos-exif-fixer.git
+cd google-photos-exif-fixer
+go build -o google-photos-exif-fixer .
+```
+
+## Usage
+
+### Basic usage
+
+```bash
+# 1. Trial run (default), preview what will happen
+./google-photos-exif-fixer \
+  -in "/path/to/Takeout/Google 相册" \
+  -out "/path/to/output"
+
+# 2. Once you have confirmed everything is correct, execute for real
+./google-photos-exif-fixer \
+  -in "/path/to/Takeout/Google 相册" \
+  -out "/path/to/output" \
+  -dry-run=false
+```
+
+### CLI flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `-in` | `./Takeout/Google 相册` | Input directory (Google Takeout export path) |
+| `-out` | `./Takeout_merged` | Output directory |
+| `-dry-run` | `true` | Trial run mode, does not write files; set to `false` to execute for real |
+| `-workers` | `4` | Number of concurrent workers |
+| `-log` | `<out>/_merge.log` | Log file path |
+| `-no-exif` | `false` | Skip JPEG EXIF writing (the file mtime is still set) |
+
+### Output structure
+
+```
+output/
+├── 2019/
+│   ├── 01/
+│   │   ├── IMG_1234.jpg          ← EXIF fixed
+│   │   └── IMG_1235.heic
+│   └── 06/
+│       └── vacation.mp4
+├── 2023/
+│   └── 12/
+│       └── photo.jpg
+└── _unmatched/                   ← orphan JSON with no matching image
+    └── ...
+```
+
+## How it works
+
+```
+Input directory
+  │
+  ├─ Walk all files, classify as ImageEntry / JSONEntry
+  │
+  ├─ Match: JSON sidecar ↔ image
+  │    ├─ Exact match (stem + ext)
+  │    ├─ Prefix match (to cope with Google truncation)
+  │    └─ Live Photo association
+  │
+  ├─ Parse the capture time (multi-level fallback)
+  │    ├─ JSON photoTakenTime
+  │    ├─ EXIF DateTimeOriginal
+  │    ├─ Folder year inference
+  │    └─ File mtime
+  │
+  └─ Concurrent output
+       ├─ Copy files to YYYY/MM/
+       ├─ Write EXIF (JPEG, when JSON is present)
+       └─ Set file mtime
+```
+
+### EXIF writing details
+
+For JPEG files, the tool will:
+
+1. **Strip** the existing APP1(Exif) segment (to avoid conflicts between multiple EXIF segments)
+2. **Construct** a minimal EXIF APP1 segment (hand-written binary TIFF structure):
+   - IFD0: `DateTime`, `ExifIFDPointer`, `GPSIFDPointer`
+   - ExifIFD: `DateTimeOriginal`, `DateTimeDigitized`
+   - GPSIFD: latitude/longitude (degrees-minutes-seconds RATIONAL format)
+3. **Insert** it after the SOI, making it the EXIF that decoders prefer
+4. **Verify**: re-read the EXIF to confirm `DateTimeOriginal` is readable, and roll back if that fails
+
+## Supported formats
+
+**Images**: JPG/JPEG, PNG, HEIC, GIF, WebP, BMP, TIFF/TIF, NEF, DNG
+
+**Videos**: MP4, MOV, M4V, AVI, LIVP
+
+> EXIF writing only takes effect for JPEG. For other formats only the file mtime is set.
+
+## License
+
+MIT
+
+---
+
+# 中文
+
 > 把 Google Photos Takeout 导出的照片元数据（拍摄时间、GPS）写回 EXIF，并按年月整理目录。
-
-**English Summary**
-
-Restore Google Photos Takeout metadata back into your photo library. The tool matches media files with JSON sidecars, writes date-taken and GPS data back to JPEG EXIF when possible, preserves timestamps for other media types, and organizes the output by `YYYY/MM`.
 
 ## 背景
 
